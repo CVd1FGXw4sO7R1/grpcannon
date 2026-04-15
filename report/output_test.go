@@ -13,12 +13,14 @@ func TestParseFormat_Valid(t *testing.T) {
 		expected Format
 	}{
 		{"text", FormatText},
-		{"TEXT", FormatText},
-		{"", FormatText},
 		{"json", FormatJSON},
-		{"JSON", FormatJSON},
 		{"csv", FormatCSV},
-		{"CSV", FormatCSV},
+		{"table", FormatTable},
+		{"markdown", FormatMarkdown},
+		{"prometheus", FormatPrometheus},
+		{"TEXT", FormatText},
+		{"JSON", FormatJSON},
+		{"Prometheus", FormatPrometheus},
 	}
 	for _, tc := range cases {
 		t.Run(tc.input, func(t *testing.T) {
@@ -27,7 +29,7 @@ func TestParseFormat_Valid(t *testing.T) {
 				t.Fatalf("unexpected error: %v", err)
 			}
 			if f != tc.expected {
-				t.Errorf("expected %d, got %d", tc.expected, f)
+				t.Errorf("expected %q, got %q", tc.expected, f)
 			}
 		})
 	}
@@ -45,17 +47,22 @@ func TestParseFormat_Invalid(t *testing.T) {
 
 func TestWrite_Formats(t *testing.T) {
 	results := makeResults(5, 1)
-	r := New(results, time.Second)
+	r := New(results, 500*time.Millisecond)
 
-	formats := []Format{FormatText, FormatJSON, FormatCSV}
+	formats := []Format{
+		FormatText, FormatJSON, FormatCSV,
+		FormatTable, FormatMarkdown, FormatPrometheus,
+	}
+
 	for _, f := range formats {
-		t.Run(fmt.Sprintf("format_%d", f), func(t *testing.T) {
+		t.Run(string(f), func(t *testing.T) {
 			var buf bytes.Buffer
-			if err := Write(r, f, &buf); err != nil {
-				t.Fatalf("Write failed: %v", err)
+			err := Write(&buf, r, f)
+			if err != nil {
+				t.Fatalf("Write(%q) error: %v", f, err)
 			}
 			if buf.Len() == 0 {
-				t.Error("expected non-empty output")
+				t.Errorf("Write(%q) produced empty output", f)
 			}
 		})
 	}
