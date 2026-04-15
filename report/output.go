@@ -6,37 +6,44 @@ import (
 	"strings"
 )
 
-// Format represents an output format for the report.
-type Format int
+// Format represents the output format for a report.
+type Format string
 
 const (
-	FormatText Format = iota
-	FormatJSON
-	FormatCSV
+	FormatText  Format = "text"
+	FormatJSON  Format = "json"
+	FormatCSV   Format = "csv"
+	FormatTable Format = "table"
 )
 
-// ParseFormat parses a format string into a Format constant.
+// ParseFormat parses a string into a Format, returning an error if unrecognised.
 func ParseFormat(s string) (Format, error) {
-	switch strings.ToLower(strings.TrimSpace(s)) {
-	case "text", "":
+	switch Format(strings.ToLower(s)) {
+	case FormatText:
 		return FormatText, nil
-	case "json":
+	case FormatJSON:
 		return FormatJSON, nil
-	case "csv":
+	case FormatCSV:
 		return FormatCSV, nil
+	case FormatTable:
+		return FormatTable, nil
 	default:
-		return FormatText, fmt.Errorf("unknown format %q: must be one of text, json, csv", s)
+		return "", fmt.Errorf("unknown format %q: must be one of text, json, csv, table", s)
 	}
 }
 
-// Write writes the report r to w using the given format.
+// Write writes the report r to w using the specified format.
 func Write(r *Report, format Format, w io.Writer) error {
 	switch format {
+	case FormatText:
+		return WriteText(r, w)
 	case FormatJSON:
 		return WriteJSON(r, w)
 	case FormatCSV:
 		return WriteCSV(r, w)
+	case FormatTable:
+		return WriteTable(r, w)
 	default:
-		return WriteText(r, w)
+		return fmt.Errorf("unsupported format: %s", format)
 	}
 }
