@@ -87,6 +87,26 @@ func TestWriteText_SuccessRate(t *testing.T) {
 
 	out := buf.String()
 	if !strings.Contains(out, "100.00%") {
-		t.Errorf("expected 100.00%% success rate, got:\n%s", out)
+		t.Errorf("expected 100.00%%%% success rate, got:\n%s", out)
+	}
+}
+
+func TestWriteText_PartialFailures(t *testing.T) {
+	results := makeResults(10, 3, []time.Duration{
+		1 * time.Millisecond,
+		2 * time.Millisecond,
+		3 * time.Millisecond,
+	})
+
+	r := New(results)
+	var buf bytes.Buffer
+
+	if err := WriteText(r, &buf); err != nil {
+		t.Fatalf("WriteText returned error: %v", err)
+	}
+
+	out := buf.String()
+	if !strings.Contains(out, "30.00%") {
+		t.Errorf("expected 30.00%%%% success rate, got:\n%s", out)
 	}
 }
