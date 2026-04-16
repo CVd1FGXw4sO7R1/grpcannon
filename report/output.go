@@ -19,19 +19,21 @@ const (
 	FormatHTML       Format = "html"
 	FormatXML        Format = "xml"
 	FormatInflux     Format = "influx"
+	FormatDotPlot    Format = "dotplot"
+	FormatSparkline  Format = "sparkline"
 )
 
-// ParseFormat parses a format string into a Format.
+// ParseFormat parses a format string into a Format value.
 func ParseFormat(s string) (Format, error) {
 	switch Format(strings.ToLower(s)) {
-	case FormatText, FormatJSON, FormatCSV, FormatTable,
-		FormatMarkdown, FormatPrometheus, FormatHTML, FormatXML, FormatInflux:
+	case FormatText, FormatJSON, FormatCSV, FormatTable, FormatMarkdown,
+		FormatPrometheus, FormatHTML, FormatXML, FormatInflux, FormatDotPlot, FormatSparkline:
 		return Format(strings.ToLower(s)), nil
 	}
 	return "", fmt.Errorf("unknown format: %q", s)
 }
 
-// Write writes the report in the given format to w.
+// Write writes the report r in the given format to w.
 func Write(w io.Writer, r *Report, f Format) error {
 	switch f {
 	case FormatText:
@@ -52,6 +54,10 @@ func Write(w io.Writer, r *Report, f Format) error {
 		return WriteXML(w, r)
 	case FormatInflux:
 		return WriteInflux(w, r)
+	case FormatDotPlot:
+		return WriteDotPlot(w, r)
+	case FormatSparkline:
+		return WriteSparkline(w, r)
 	}
 	return fmt.Errorf("unsupported format: %q", f)
 }
