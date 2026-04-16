@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-// Format represents a supported output format.
+// Format represents an output format for reports.
 type Format string
 
 const (
@@ -16,25 +16,16 @@ const (
 	FormatTable      Format = "table"
 	FormatMarkdown   Format = "markdown"
 	FormatPrometheus Format = "prometheus"
+	FormatHTML       Format = "html"
 )
 
-// ParseFormat parses a string into a Format, returning an error if unknown.
+// ParseFormat parses a string into a Format.
 func ParseFormat(s string) (Format, error) {
 	switch Format(strings.ToLower(s)) {
-	case FormatText:
-		return FormatText, nil
-	case FormatJSON:
-		return FormatJSON, nil
-	case FormatCSV:
-		return FormatCSV, nil
-	case FormatTable:
-		return FormatTable, nil
-	case FormatMarkdown:
-		return FormatMarkdown, nil
-	case FormatPrometheus:
-		return FormatPrometheus, nil
+	case FormatText, FormatJSON, FormatCSV, FormatTable, FormatMarkdown, FormatPrometheus, FormatHTML:
+		return Format(strings.ToLower(s)), nil
 	default:
-		return "", fmt.Errorf("unknown format %q: supported formats are text, json, csv, table, markdown, prometheus", s)
+		return "", fmt.Errorf("unknown format %q: choose one of text, json, csv, table, markdown, prometheus, html", s)
 	}
 }
 
@@ -53,6 +44,8 @@ func Write(w io.Writer, r *Report, f Format) error {
 		return WriteMarkdown(w, r)
 	case FormatPrometheus:
 		return WritePrometheus(w, r)
+	case FormatHTML:
+		return WriteHTML(w, r)
 	default:
 		return fmt.Errorf("unsupported format: %s", f)
 	}
