@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-// Format represents an output format.
+// Format represents an output format for reports.
 type Format string
 
 const (
@@ -21,27 +21,32 @@ const (
 	FormatInflux     Format = "influx"
 	FormatDotPlot    Format = "dotplot"
 	FormatSparkline  Format = "sparkline"
+	FormatHeatmap    Format = "heatmap"
+	FormatTimeline   Format = "timeline"
+	FormatFlamegraph Format = "flamegraph"
 )
 
-// ParseFormat parses a format string into a Format value.
+// ParseFormat parses a string into a Format, returning an error if unknown.
 func ParseFormat(s string) (Format, error) {
 	switch Format(strings.ToLower(s)) {
 	case FormatText, FormatJSON, FormatCSV, FormatTable, FormatMarkdown,
-		FormatPrometheus, FormatHTML, FormatXML, FormatInflux, FormatDotPlot, FormatSparkline:
+		FormatPrometheus, FormatHTML, FormatXML, FormatInflux,
+		FormatDotPlot, FormatSparkline, FormatHeatmap, FormatTimeline, FormatFlamegraph:
 		return Format(strings.ToLower(s)), nil
+	default:
+		return "", fmt.Errorf("unknown format: %q", s)
 	}
-	return "", fmt.Errorf("unknown format: %q", s)
 }
 
-// Write writes the report r in the given format to w.
-func Write(w io.Writer, r *Report, f Format) error {
+// Write writes the report in the given format to w.
+func Write(w io.Writer, r *Report, results []Result, f Format) error {
 	switch f {
 	case FormatText:
 		return WriteText(w, r)
 	case FormatJSON:
 		return WriteJSON(w, r)
 	case FormatCSV:
-		return WriteCSV(w, r)
+		return WriteCSV(w, results)
 	case FormatTable:
 		return WriteTable(w, r)
 	case FormatMarkdown:
@@ -55,9 +60,16 @@ func Write(w io.Writer, r *Report, f Format) error {
 	case FormatInflux:
 		return WriteInflux(w, r)
 	case FormatDotPlot:
-		return WriteDotPlot(w, r)
+		return WriteDotPlot(w, results)
 	case FormatSparkline:
-		return WriteSparkline(w, r)
+		return WriteSparkline(w, results)
+	case FormatHeatmap:
+		return WriteHeatmap(w, results, 0)
+	case FormatTimeline:
+		return WriteTimeline(w, results, 0)
+	case FormatFlamegraph:
+		return WriteFlamegraph(w, results)
+	default:
+		return fmt.Errorf("unsupported format: %q", f)
 	}
-	return fmt.Errorf("unsupported format: %q", f)
 }
