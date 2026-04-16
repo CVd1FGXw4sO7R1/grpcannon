@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-// Format represents an output format for reports.
+// Format represents an output format.
 type Format string
 
 const (
@@ -17,19 +17,21 @@ const (
 	FormatMarkdown   Format = "markdown"
 	FormatPrometheus Format = "prometheus"
 	FormatHTML       Format = "html"
+	FormatXML        Format = "xml"
+	FormatInflux     Format = "influx"
 )
 
-// ParseFormat parses a string into a Format.
+// ParseFormat parses a format string into a Format.
 func ParseFormat(s string) (Format, error) {
 	switch Format(strings.ToLower(s)) {
-	case FormatText, FormatJSON, FormatCSV, FormatTable, FormatMarkdown, FormatPrometheus, FormatHTML:
+	case FormatText, FormatJSON, FormatCSV, FormatTable,
+		FormatMarkdown, FormatPrometheus, FormatHTML, FormatXML, FormatInflux:
 		return Format(strings.ToLower(s)), nil
-	default:
-		return "", fmt.Errorf("unknown format %q: choose one of text, json, csv, table, markdown, prometheus, html", s)
 	}
+	return "", fmt.Errorf("unknown format: %q", s)
 }
 
-// Write writes the report r to w in the given format.
+// Write writes the report in the given format to w.
 func Write(w io.Writer, r *Report, f Format) error {
 	switch f {
 	case FormatText:
@@ -46,7 +48,10 @@ func Write(w io.Writer, r *Report, f Format) error {
 		return WritePrometheus(w, r)
 	case FormatHTML:
 		return WriteHTML(w, r)
-	default:
-		return fmt.Errorf("unsupported format: %s", f)
+	case FormatXML:
+		return WriteXML(w, r)
+	case FormatInflux:
+		return WriteInflux(w, r)
 	}
+	return fmt.Errorf("unsupported format: %q", f)
 }

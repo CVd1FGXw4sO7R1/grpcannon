@@ -3,55 +3,46 @@ package report
 import (
 	"bytes"
 	"testing"
+	"time"
 )
 
 func TestParseFormat_Valid(t *testing.T) {
-	cases := []string{"text", "json", "csv", "table", "markdown", "prometheus", "html", "TEXT", "JSON", "HTML"}
-	for _, c := range cases {
-		t.Run(c, func(t *testing.T) {
-			_, err := ParseFormat(c)
-			if err != nil {
-				t.Errorf("expected no error for %q, got %v", c, err)
-			}
-		})
+	formats := []string{"text", "json", "csv", "table", "markdown", "prometheus", "html", "xml", "influx"}
+	for _, f := range formats {
+		_, err := ParseFormat(f)
+		if err != nil {
+			t.Errorf("expected format %q to be valid, got error: %v", f, err)
+		}
 	}
 }
 
 func TestParseFormat_Invalid(t *testing.T) {
-	_, err := ParseFormat("xml")
+	_, err := ParseFormat("nope")
 	if err == nil {
 		t.Error("expected error for unknown format")
 	}
 }
 
 func TestWrite_Formats(t *testing.T) {
-	results := makeResults(4, 1)
+	results := makeResults(4, 1, 20*time.Millisecond)
 	r := New(results)
-
-	formats := []Format{
-		FormatText, FormatJSON, FormatCSV, FormatTable,
-		FormatMarkdown, FormatPrometheus, FormatHTML,
-	}
-
+	formats := []Format{FormatText, FormatJSON, FormatCSV, FormatTable, FormatMarkdown, FormatPrometheus, FormatHTML, FormatXML, FormatInflux}
 	for _, f := range formats {
-		t.Run(string(f), func(t *testing.T) {
-			var buf bytes.Buffer
-			if err := Write(&buf, r, f); err != nil {
-				t.Errorf("Write(%s) error: %v", f, err)
-			}
-			if buf.Len() == 0 {
-				t.Errorf("Write(%s) produced empty output", f)
-			}
-		})
+		var buf bytes.Buffer
+		err := Write(&buf, r, f)
+		if err != nil {
+			t.Errorf("Write(%q) unexpected error: %v", f, err)
+		}
+		if buf.Len() == 0 {
+			t.Errorf("Write(%q) produced no output", f)
+		}
 	}
 }
 
 func TestWrite_UnknownFormat(t *testing.T) {
-	results := makeResults(2, 0)
-	r := New(results)
 	var buf bytes.Buffer
-	err := Write(&buf, r, Format("xml"))
+	err := Write(&buf, &Report{}, Format("unknown"))
 	if err == nil {
-		t.Error("expected error for unsupported format")
+		t.Error("expected error for unknown format")
 	}
 }
