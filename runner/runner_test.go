@@ -55,6 +55,10 @@ func TestRun_WithFailures(t *testing.T) {
 	if stats.Successes != 0 {
 		t.Errorf("expected 0 successes, got %d", stats.Successes)
 	}
+	// Failures and successes should account for all calls.
+	if stats.Failures+stats.Successes != stats.Total {
+		t.Errorf("failures (%d) + successes (%d) != total (%d)", stats.Failures, stats.Successes, stats.Total)
+	}
 }
 
 func TestRun_InvalidConfig(t *testing.T) {
