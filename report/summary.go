@@ -2,49 +2,51 @@ package report
 
 import "time"
 
-// Summary holds pre-computed aggregate statistics for a completed run.
-type Summary struct {
-	Total      int
-	Successes  int
-	Failures   int
-	SuccessRate float64
-	AvgMs      float64
-	MinMs      float64
-	MaxMs      float64
-	P50Ms      float64
-	P90Ms      float64
-	P99Ms      float64
-	TotalTime  time.Duration
+// Report holds aggregated statistics for a load test run.
+type Report struct {
+	Total   int
+	Success int
+	Failure int
+	Avg     time.Duration
+	Min     time.Duration
+	Max     time.Duration
+	P50     time.Duration
+	P95     time.Duration
+	P99     time.Duration
 }
 
-// Summarize computes a Summary from a slice of Results and the total wall-clock
-// duration of the run.
-func Summarize(results []Result, totalTime time.Duration) Summary {
-	s := Summary{
-		Total:     len(results),
-		TotalTime: totalTime,
-	}
+// Summarize builds a Report from a slice of Results.
+func Summarize(results []Result) *Report {
+	r := &Report{Total: len(results)}
 	if len(results) == 0 {
-		return s
+		return r
 	}
 
-	var sumMs float64
-	for _, r := range results {
-		if r.Err == nil {
-			s.Successes++
+	var durations []time.Duration
+	var total time.Duration
+	r.Min = results[0].Duration
+	r.Max = results[0].Duration
+
+	for _, res := range results {
+		if res.IsSuccess() {
+			r.Success++
 		} else {
-			s.Failures++
+			r.Failure++
 		}
-		sumMs += msFloat(r.Duration)
+		durations = append(durations, res.Duration)
+		total += res.Duration
+		if res.Duration < r.Min {
+			r.Min = res.Duration
+		}
+		if res.Duration > r.Max {
+			r.Max = res.Duration
+		}
 	}
-	s.SuccessRate = float64(s.Successes) / float64(s.Total) * 100
-	s.AvgMs = sumMs / float64(s.Total)
 
-	sorted := SortedDurationsMs(results)
-	s.MinMs = sorted[0]
-	s.MaxMs = sorted[len(sorted)-1]
-	s.P50Ms = Percentile(sorted, 50)
-	s.P90Ms = Percentile(sorted, 90)
-	s.P99Ms = Percentile(sorted, 99)
-	return s
+	r.Avg = total / time.Duration(len(results))
+	sorted := SortedDurationsMs(durations)
+	r.P50 = time.Duration(Percentile(sorted, 50)) * time.Millisecond
+	r.P95 = time.Duration(Percentile(sorted, 95)) * time.Millisecond
+	r.P99 = time.Duration(Percentile(sorted, 99)) * time.Millisecond
+	return r
 }
