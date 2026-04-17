@@ -24,16 +24,17 @@ const (
 	FormatHeatmap    Format = "heatmap"
 	FormatTimeline   Format = "timeline"
 	FormatFlamegraph Format = "flamegraph"
-	FormatLatency    Format = "latency"
+	FormatRPS        Format = "rps"
 )
 
 var validFormats = []Format{
 	FormatText, FormatJSON, FormatCSV, FormatTable, FormatMarkdown,
-	FormatPrometheus, FormatHTML, FormatXML, FormatInflux, FormatDotPlot,
-	FormatSparkline, FormatHeatmap, FormatTimeline, FormatFlamegraph, FormatLatency,
+	FormatPrometheus, FormatHTML, FormatXML, FormatInflux,
+	FormatDotPlot, FormatSparkline, FormatHeatmap, FormatTimeline,
+	FormatFlamegraph, FormatRPS,
 }
 
-// ParseFormat parses a string into a Format, returning an error if unrecognised.
+// ParseFormat parses and validates a format string.
 func ParseFormat(s string) (Format, error) {
 	f := Format(strings.ToLower(strings.TrimSpace(s)))
 	for _, v := range validFormats {
@@ -44,11 +45,9 @@ func ParseFormat(s string) (Format, error) {
 	return "", fmt.Errorf("unknown format %q", s)
 }
 
-// Write dispatches to the appropriate writer based on format.
-func Write(w io.Writer, r *Report, results []Result, format Format) error {
-	switch format {
-	case FormatText:
-		return WriteText(w, r)
+// Write writes results in the given format to w.
+func Write(w io.Writer, r *Report, results []Result, f Format) error {
+	switch f {
 	case FormatJSON:
 		return WriteJSON(w, r)
 	case FormatCSV:
@@ -66,7 +65,7 @@ func Write(w io.Writer, r *Report, results []Result, format Format) error {
 	case FormatInflux:
 		return WriteInflux(w, r)
 	case FormatDotPlot:
-		return WriteDotPlot(w, results)
+		return WriteDotPlot(w, r)
 	case FormatSparkline:
 		return WriteSparkline(w, results)
 	case FormatHeatmap:
@@ -74,10 +73,10 @@ func Write(w io.Writer, r *Report, results []Result, format Format) error {
 	case FormatTimeline:
 		return WriteTimeline(w, results, 0)
 	case FormatFlamegraph:
-		return WriteFlamegraph(w, results)
-	case FormatLatency:
-		return WriteLatencyBands(w, results, 0)
+		return WriteFlamegraph(w, r)
+	case FormatRPS:
+		return WriteRPS(w, results)
 	default:
-		return fmt.Errorf("unsupported format: %s", format)
+		return WriteText(w, r)
 	}
 }
