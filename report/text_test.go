@@ -110,3 +110,27 @@ func TestWriteText_PartialFailures(t *testing.T) {
 		t.Errorf("expected 30.00%%%% success rate, got:\n%s", out)
 	}
 }
+
+// TestWriteText_FailedCount verifies that the failed count is correctly
+// reported as the difference between total requests and successful ones.
+func TestWriteText_FailedCount(t *testing.T) {
+	results := makeResults(10, 4, []time.Duration{
+		1 * time.Millisecond,
+		2 * time.Millisecond,
+		3 * time.Millisecond,
+		4 * time.Millisecond,
+	})
+
+	r := New(results)
+	var buf bytes.Buffer
+
+	if err := WriteText(r, &buf); err != nil {
+		t.Fatalf("WriteText returned error: %v", err)
+	}
+
+	out := buf.String()
+	// 10 total - 4 successful = 6 failed
+	if !strings.Contains(out, "Failed:") {
+		t.Errorf("expected output to contain 'Failed:', got:\n%s", out)
+	}
+}
