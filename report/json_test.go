@@ -57,3 +57,26 @@ func TestWriteJSON_EmptyResults(t *testing.T) {
 		t.Errorf("unexpected values for empty summary: %+v", js)
 	}
 }
+
+func TestWriteJSON_SuccessesAndFailuresSumToTotal(t *testing.T) {
+	durations := []time.Duration{
+		1 * time.Millisecond,
+		2 * time.Millisecond,
+		3 * time.Millisecond,
+		4 * time.Millisecond,
+	}
+	results := makeResults(durations, 1)
+	s := New(results, 50*time.Millisecond)
+
+	var buf bytes.Buffer
+	if err := s.WriteJSON(&buf); err != nil {
+		t.Fatalf("WriteJSON returned error: %v", err)
+	}
+	var js JSONSummary
+	if err := json.Unmarshal(buf.Bytes(), &js); err != nil {
+		t.Fatalf("failed to unmarshal JSON: %v", err)
+	}
+	if js.Successes+js.Failures != js.Total {
+		t.Errorf("successes(%d) + failures(%d) != total(%d)", js.Successes, js.Failures, js.Total)
+	}
+}
