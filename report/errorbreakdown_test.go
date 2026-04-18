@@ -40,6 +40,19 @@ func TestBuildErrorBreakdown_NoErrors(t *testing.T) {
 	}
 }
 
+func TestBuildErrorBreakdown_SingleError(t *testing.T) {
+	results := []Result{
+		{Duration: ms(5), Error: errors.New("unavailable")},
+	}
+	bd := BuildErrorBreakdown(results)
+	if bd.Total != 1 {
+		t.Errorf("expected total 1, got %d", bd.Total)
+	}
+	if bd.Errors["unavailable"] != 1 {
+		t.Errorf("expected 1 unavailable, got %d", bd.Errors["unavailable"])
+	}
+}
+
 func TestWriteErrorBreakdown_ValidOutput(t *testing.T) {
 	var buf bytes.Buffer
 	if err := WriteErrorBreakdown(&buf, makeErrorResults()); err != nil {
