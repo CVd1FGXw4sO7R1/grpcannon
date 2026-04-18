@@ -19,21 +19,16 @@ const (
 	FormatHTML       Format = "html"
 	FormatXML        Format = "xml"
 	FormatInflux     Format = "influx"
-	FormatDotPlot    Format = "dotplot"
-	FormatSparkline  Format = "sparkline"
-	FormatHeatmap    Format = "heatmap"
-	FormatTimeline   Format = "timeline"
-	FormatFlamegraph Format = "flamegraph"
-	FormatCurve      Format = "curve"
+	FormatRegression Format = "regression"
 )
 
 var validFormats = []Format{
-	FormatText, FormatJSON, FormatCSV, FormatTable, FormatMarkdown,
-	FormatPrometheus, FormatHTML, FormatXML, FormatInflux, FormatDotPlot,
-	FormatSparkline, FormatHeatmap, FormatTimeline, FormatFlamegraph, FormatCurve,
+	FormatText, FormatJSON, FormatCSV, FormatTable,
+	FormatMarkdown, FormatPrometheus, FormatHTML, FormatXML,
+	FormatInflux, FormatRegression,
 }
 
-// ParseFormat parses a format string, returning an error if unknown.
+// ParseFormat parses a format string into a Format.
 func ParseFormat(s string) (Format, error) {
 	f := Format(strings.ToLower(s))
 	for _, v := range validFormats {
@@ -41,44 +36,35 @@ func ParseFormat(s string) (Format, error) {
 			return f, nil
 		}
 	}
-	return "", fmt.Errorf("unknown format %q", s)
+	return "", fmt.Errorf("unknown format: %q", s)
 }
 
-// Write writes the report in the requested format.
-func Write(w io.Writer, r *Report, results []Result, format Format) error {
-	switch format {
+// Write writes the report r to w in the given format.
+func Write(w io.Writer, r *Report, f Format) error {
+	switch f {
 	case FormatText:
-		WriteText(w, r)
+		return WriteText(w, r)
 	case FormatJSON:
 		return WriteJSON(w, r)
 	case FormatCSV:
-		WriteCSV(w, results)
+		return WriteCSV(w, r)
 	case FormatTable:
-		WriteTable(w, r)
+		return WriteTable(w, r)
 	case FormatMarkdown:
-		WriteMarkdown(w, r)
+		return WriteMarkdown(w, r)
 	case FormatPrometheus:
-		WritePrometheus(w, r)
+		return WritePrometheus(w, r)
 	case FormatHTML:
-		WriteHTML(w, r)
+		return WriteHTML(w, r)
 	case FormatXML:
 		return WriteXML(w, r)
 	case FormatInflux:
-		WriteInflux(w, r)
-	case FormatDotPlot:
-		WriteDotPlot(w, results)
-	case FormatSparkline:
-		WriteSparkline(w, results)
-	case FormatHeatmap:
-		WriteHeatmap(w, results, 0)
-	case FormatTimeline:
-		WriteTimeline(w, results, 0)
-	case FormatFlamegraph:
-		WriteFlamegraph(w, r)
-	case FormatCurve:
-		WritePercentileCurve(w, results, 20)
+		return WriteInflux(w, r)
+	case FormatRegression:
+		// Regression requires a baseline; emit summary only when called standalone.
+		WriteRegression(w, nil)
+		return nil
 	default:
-		return fmt.Errorf("unknown format %q", format)
+		return fmt.Errorf("unsupported format: %q", f)
 	}
-	return nil
 }
