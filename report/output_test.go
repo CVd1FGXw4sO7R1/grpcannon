@@ -2,32 +2,33 @@ package report
 
 import (
 	"bytes"
+	"strings"
 	"testing"
 )
 
 func TestParseFormat_Valid(t *testing.T) {
-	cases := []string{"text", "json", "csv", "table", "markdown", "rps"}
+	cases := []string{"text", "json", "csv", "table", "markdown", "curve"}
 	for _, c := range cases {
 		if _, err := ParseFormat(c); err != nil {
-			t.Errorf("expected %q to be valid, got %v", c, err)
+			t.Errorf("expected %q to be valid: %v", c, err)
 		}
 	}
 }
 
 func TestParseFormat_Invalid(t *testing.T) {
-	if _, err := ParseFormat("bogus"); err == nil {
+	if _, err := ParseFormat("nope"); err == nil {
 		t.Error("expected error for unknown format")
 	}
 }
 
 func TestWrite_Formats(t *testing.T) {
-	results := makeResults()
-	r := New(results)
+	r := &Report{Total: 2, Success: 2}
+	results := makeCurveResults()
+
 	formats := []Format{
-		FormatText, FormatJSON, FormatCSV, FormatTable,
-		FormatMarkdown, FormatPrometheus, FormatHTML, FormatXML,
-		FormatInflux, FormatDotPlot, FormatSparkline, FormatHeatmap,
-		FormatTimeline, FormatFlamegraph, FormatRPS,
+		FormatText, FormatJSON, FormatCSV, FormatTable, FormatMarkdown,
+		FormatPrometheus, FormatHTML, FormatXML, FormatInflux, FormatDotPlot,
+		FormatSparkline, FormatHeatmap, FormatTimeline, FormatFlamegraph, FormatCurve,
 	}
 	for _, f := range formats {
 		var buf bytes.Buffer
@@ -38,11 +39,12 @@ func TestWrite_Formats(t *testing.T) {
 }
 
 func TestWrite_UnknownFormat(t *testing.T) {
-	results := makeResults()
-	r := New(results)
 	var buf bytes.Buffer
-	// unknown falls back to text — no error expected
-	if err := Write(&buf, r, results, Format("unknown")); err != nil {
-		t.Errorf("unexpected error: %v", err)
+	err := Write(&buf, &Report{}, nil, Format("bogus"))
+	if err == nil {
+		t.Error("expected error for unknown format")
+	}
+	if !strings.Contains(err.Error(), "bogus") {
+		t.Errorf("error should mention format name: %v", err)
 	}
 }
