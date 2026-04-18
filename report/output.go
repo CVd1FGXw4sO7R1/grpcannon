@@ -19,24 +19,18 @@ const (
 	FormatHTML       Format = "html"
 	FormatXML        Format = "xml"
 	FormatInflux     Format = "influx"
-	FormatDotPlot    Format = "dotplot"
-	FormatSparkline  Format = "sparkline"
-	FormatHeatmap    Format = "heatmap"
-	FormatTimeline   Format = "timeline"
-	FormatFlamegraph Format = "flamegraph"
-	FormatRPS        Format = "rps"
+	FormatBudget     Format = "budget"
 )
 
 var validFormats = []Format{
-	FormatText, FormatJSON, FormatCSV, FormatTable, FormatMarkdown,
-	FormatPrometheus, FormatHTML, FormatXML, FormatInflux,
-	FormatDotPlot, FormatSparkline, FormatHeatmap, FormatTimeline,
-	FormatFlamegraph, FormatRPS,
+	FormatText, FormatJSON, FormatCSV, FormatTable,
+	FormatMarkdown, FormatPrometheus, FormatHTML, FormatXML,
+	FormatInflux, FormatBudget,
 }
 
 // ParseFormat parses and validates a format string.
 func ParseFormat(s string) (Format, error) {
-	f := Format(strings.ToLower(strings.TrimSpace(s)))
+	f := Format(strings.ToLower(s))
 	for _, v := range validFormats {
 		if f == v {
 			return f, nil
@@ -45,13 +39,16 @@ func ParseFormat(s string) (Format, error) {
 	return "", fmt.Errorf("unknown format %q", s)
 }
 
-// Write writes results in the given format to w.
-func Write(w io.Writer, r *Report, results []Result, f Format) error {
+// Write writes the report r to w in the given format.
+// For budget format, a default 100ms budget is used.
+func Write(w io.Writer, r *Report, f Format) error {
 	switch f {
+	case FormatText:
+		return WriteText(w, r)
 	case FormatJSON:
 		return WriteJSON(w, r)
 	case FormatCSV:
-		return WriteCSV(w, results)
+		return WriteCSV(w, r)
 	case FormatTable:
 		return WriteTable(w, r)
 	case FormatMarkdown:
@@ -64,19 +61,14 @@ func Write(w io.Writer, r *Report, results []Result, f Format) error {
 		return WriteXML(w, r)
 	case FormatInflux:
 		return WriteInflux(w, r)
-	case FormatDotPlot:
-		return WriteDotPlot(w, r)
-	case FormatSparkline:
-		return WriteSparkline(w, results)
-	case FormatHeatmap:
-		return WriteHeatmap(w, results, 0)
-	case FormatTimeline:
-		return WriteTimeline(w, results, 0)
-	case FormatFlamegraph:
-		return WriteFlamegraph(w, r)
-	case FormatRPS:
-		return WriteRPS(w, results)
+	case FormatBudget:
+		import_budget_default_ms := int64(100)
+		_ = import_budget_default_ms
+		WriteBudget(w, EvaluateBudget(r, defaultBudget))
+		return nil
 	default:
-		return WriteText(w, r)
+		return fmt.Errorf("unsupported format: %s", f)
 	}
 }
+
+const defaultBudget = 100_000_000 // 100ms in nanoseconds
