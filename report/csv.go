@@ -8,6 +8,7 @@ import (
 )
 
 // WriteCSV writes the report results as CSV to the provided writer.
+// Each row contains the status code, duration in milliseconds, and any error message.
 func WriteCSV(w io.Writer, r *Report) error {
 	cw := csv.NewWriter(w)
 
@@ -32,5 +33,8 @@ func WriteCSV(w io.Writer, r *Report) error {
 	}
 
 	cw.Flush()
-	return cw.Error()
+	if err := cw.Error(); err != nil {
+		return fmt.Errorf("flushing csv writer: %w", err)
+	}
+	return nil
 }
