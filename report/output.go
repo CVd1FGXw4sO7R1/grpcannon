@@ -7,38 +7,47 @@ import (
 )
 
 // Format represents a supported output format.
-type Format string
+type Format int
 
 const (
-	FormatText       Format = "text"
-	FormatJSON       Format = "json"
-	FormatCSV        Format = "csv"
-	FormatTable      Format = "table"
-	FormatMarkdown   Format = "markdown"
-	FormatPrometheus Format = "prometheus"
-	FormatHTML       Format = "html"
-	FormatXML        Format = "xml"
-	FormatInflux     Format = "influx"
-	FormatBaseline   Format = "baseline"
+	FormatText Format = iota
+	FormatJSON
+	FormatCSV
+	FormatTable
+	FormatMarkdown
+	FormatPrometheus
+	FormatHTML
+	FormatXML
+	FormatInflux
 )
 
-// ParseFormat converts a string to a Format, returning an error if unknown.
-func ParseFormat(s string) (Format, error) {
-	switch Format(strings.ToLower(s)) {
-	case FormatText, FormatJSON, FormatCSV, FormatTable,
-		FormatMarkdown, FormatPrometheus, FormatHTML, FormatXML,
-		FormatInflux, FormatBaseline:
-		return Format(strings.ToLower(s)), nil
-	default:
-		return "", fmt.Errorf("unknown format: %q", s)
-	}
+var formatNames = map[string]Format{
+	"text":       FormatText,
+	"json":       FormatJSON,
+	"csv":        FormatCSV,
+	"table":      FormatTable,
+	"markdown":   FormatMarkdown,
+	"prometheus": FormatPrometheus,
+	"html":       FormatHTML,
+	"xml":        FormatXML,
+	"influx":     FormatInflux,
 }
 
-// Write renders the report in the requested format to w.
+// ParseFormat parses a format string into a Format value.
+func ParseFormat(s string) (Format, error) {
+	f, ok := formatNames[strings.ToLower(s)]
+	if !ok {
+		return FormatText, fmt.Errorf("unknown format %q", s)
+	}
+	return f, nil
+}
+
+// Write writes the report in the given format to w.
 func Write(w io.Writer, r *Report, f Format) error {
+	if r == nil {
+		return fmt.Errorf("nil report")
+	}
 	switch f {
-	case FormatText:
-		return WriteText(w, r)
 	case FormatJSON:
 		return WriteJSON(w, r)
 	case FormatCSV:
@@ -55,14 +64,7 @@ func Write(w io.Writer, r *Report, f Format) error {
 		return WriteXML(w, r)
 	case FormatInflux:
 		return WriteInflux(w, r)
-	case FormatBaseline:
-		snap, err := CaptureBaseline(r)
-		if err != nil {
-			return err
-		}
-		WriteBaseline(w, snap)
-		return nil
 	default:
-		return fmt.Errorf("unsupported format: %q", f)
+		return WriteText(w, r)
 	}
 }
