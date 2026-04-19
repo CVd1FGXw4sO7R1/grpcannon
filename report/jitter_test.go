@@ -19,6 +19,11 @@ func makeJitterResults(durations []time.Duration, withErr bool) []Result {
 	return results
 }
 
+// ms is a helper that converts an integer millisecond value to time.Duration.
+func ms(n int) time.Duration {
+	return time.Duration(n) * time.Millisecond
+}
+
 func TestCalcJitter_Empty(t *testing.T) {
 	if CalcJitter(nil) != nil {
 		t.Fatal("expected nil for empty input")
@@ -62,6 +67,23 @@ func TestCalcJitter_KnownValues(t *testing.T) {
 	}
 	if j.StdDev != 0 {
 		t.Errorf("StdDev: got %v, want 0", j.StdDev)
+	}
+}
+
+func TestCalcJitter_WithLastError(t *testing.T) {
+	// Last result has an error and should be excluded from delta calculation.
+	results := makeJitterResults([]time.Duration{
+		ms(10), ms(20), ms(30), ms(40),
+	}, true)
+	j := CalcJitter(results)
+	if j == nil {
+		t.Fatal("expected non-nil jitter")
+	}
+	if j.Min != ms(10) {
+		t.Errorf("Min: got %v, want %v", j.Min, ms(10))
+	}
+	if j.Max != ms(10) {
+		t.Errorf("Max: got %v, want %v", j.Max, ms(10))
 	}
 }
 
