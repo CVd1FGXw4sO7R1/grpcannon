@@ -19,27 +19,22 @@ const (
 	FormatHTML       Format = "html"
 	FormatXML        Format = "xml"
 	FormatInflux     Format = "influx"
-	FormatRegression Format = "regression"
+	FormatBaseline   Format = "baseline"
 )
 
-var validFormats = []Format{
-	FormatText, FormatJSON, FormatCSV, FormatTable,
-	FormatMarkdown, FormatPrometheus, FormatHTML, FormatXML,
-	FormatInflux, FormatRegression,
-}
-
-// ParseFormat parses a format string into a Format.
+// ParseFormat converts a string to a Format, returning an error if unknown.
 func ParseFormat(s string) (Format, error) {
-	f := Format(strings.ToLower(s))
-	for _, v := range validFormats {
-		if f == v {
-			return f, nil
-		}
+	switch Format(strings.ToLower(s)) {
+	case FormatText, FormatJSON, FormatCSV, FormatTable,
+		FormatMarkdown, FormatPrometheus, FormatHTML, FormatXML,
+		FormatInflux, FormatBaseline:
+		return Format(strings.ToLower(s)), nil
+	default:
+		return "", fmt.Errorf("unknown format: %q", s)
 	}
-	return "", fmt.Errorf("unknown format: %q", s)
 }
 
-// Write writes the report r to w in the given format.
+// Write renders the report in the requested format to w.
 func Write(w io.Writer, r *Report, f Format) error {
 	switch f {
 	case FormatText:
@@ -60,9 +55,12 @@ func Write(w io.Writer, r *Report, f Format) error {
 		return WriteXML(w, r)
 	case FormatInflux:
 		return WriteInflux(w, r)
-	case FormatRegression:
-		// Regression requires a baseline; emit summary only when called standalone.
-		WriteRegression(w, nil)
+	case FormatBaseline:
+		snap, err := CaptureBaseline(r)
+		if err != nil {
+			return err
+		}
+		WriteBaseline(w, snap)
 		return nil
 	default:
 		return fmt.Errorf("unsupported format: %q", f)

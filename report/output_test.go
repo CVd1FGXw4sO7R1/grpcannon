@@ -2,49 +2,55 @@ package report
 
 import (
 	"bytes"
-	"strings"
 	"testing"
 )
 
 func TestParseFormat_Valid(t *testing.T) {
-	cases := []string{"text", "json", "csv", "table", "markdown", "curve"}
-	for _, c := range cases {
-		if _, err := ParseFormat(c); err != nil {
-			t.Errorf("expected %q to be valid: %v", c, err)
+	formats := []string{"text", "json", "csv", "table", "markdown", "prometheus", "html", "xml", "influx", "baseline"}
+	for _, s := range formats {
+		if _, err := ParseFormat(s); err != nil {
+			t.Errorf("expected %q to be valid: %v", s, err)
 		}
 	}
 }
 
 func TestParseFormat_Invalid(t *testing.T) {
-	if _, err := ParseFormat("nope"); err == nil {
+	_, err := ParseFormat("nope")
+	if err == nil {
 		t.Error("expected error for unknown format")
 	}
 }
 
 func TestWrite_Formats(t *testing.T) {
-	r := &Report{Total: 2, Success: 2}
-	results := makeCurveResults()
-
-	formats := []Format{
-		FormatText, FormatJSON, FormatCSV, FormatTable, FormatMarkdown,
-		FormatPrometheus, FormatHTML, FormatXML, FormatInflux, FormatDotPlot,
-		FormatSparkline, FormatHeatmap, FormatTimeline, FormatFlamegraph, FormatCurve,
-	}
+	r := New([]Result{
+		{Duration: ms(10), Error: nil},
+		{Duration: ms(50), Error: nil},
+	})
+	formats := []Format{FormatText, FormatJSON, FormatCSV, FormatTable, FormatMarkdown, FormatPrometheus, FormatHTML, FormatXML, FormatInflux, FormatBaseline}
 	for _, f := range formats {
 		var buf bytes.Buffer
-		if err := Write(&buf, r, results, f); err != nil {
-			t.Errorf("Write(%q) returned error: %v", f, err)
+		if err := Write(&buf, r, f); err != nil {
+			t.Errorf("Write(%q) error: %v", f, err)
+		}
+		if buf.Len() == 0 {
+			t.Errorf("Write(%q) produced no output", f)
 		}
 	}
 }
 
 func TestWrite_UnknownFormat(t *testing.T) {
+	r := New(nil)
 	var buf bytes.Buffer
-	err := Write(&buf, &Report{}, nil, Format("bogus"))
+	err := Write(&buf, r, Format("unknown"))
 	if err == nil {
 		t.Error("expected error for unknown format")
 	}
-	if !strings.Contains(err.Error(), "bogus") {
-		t.Errorf("error should mention format name: %v", err)
+}
+
+func TestWrite_BaselineNilReport(t *testing.T) {
+	var buf bytes.Buffer
+	err := Write(&buf, nil, FormatBaseline)
+	if err == nil {
+		t.Error("expected error writing baseline from nil report")
 	}
 }
