@@ -21,6 +21,19 @@ func TestParseFormat_Invalid(t *testing.T) {
 	}
 }
 
+func TestParseFormat_RoundTrip(t *testing.T) {
+	formats := []Format{FormatText, FormatJSON, FormatCSV, FormatTable, FormatMarkdown, FormatPrometheus, FormatHTML, FormatXML, FormatInflux, FormatBaseline}
+	for _, f := range formats {
+		parsed, err := ParseFormat(string(f))
+		if err != nil {
+			t.Errorf("ParseFormat(%q) unexpected error: %v", f, err)
+		}
+		if parsed != f {
+			t.Errorf("ParseFormat(%q) = %q, want %q", f, parsed, f)
+		}
+	}
+}
+
 func TestWrite_Formats(t *testing.T) {
 	r := New([]Result{
 		{Duration: ms(10), Error: nil},
