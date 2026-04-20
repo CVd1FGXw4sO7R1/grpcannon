@@ -3,19 +3,18 @@ package report
 import (
 	"errors"
 	"testing"
-	"time"
 )
 
 func TestResult_IsSuccess_NoError(t *testing.T) {
-	r := Result{Start: time.Now(), Duration: time.Millisecond, Err: nil}
+	r := Result{}
 	if !r.IsSuccess() {
-		t.Error("expected success")
+		t.Fatal("expected IsSuccess true when no error")
 	}
 }
 
 func TestResult_IsSuccess_WithError(t *testing.T) {
-	r := Result{Start: time.Now(), Duration: time.Millisecond, Err: errors.New("fail")}
+	r := Result{Error: errors.New("fail")}
 	if r.IsSuccess() {
-		t.Error("expected failure")
+		t.Fatal("expected IsSuccess false when error set")
 	}
 }
