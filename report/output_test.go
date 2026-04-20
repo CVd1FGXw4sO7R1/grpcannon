@@ -2,63 +2,104 @@ package report
 
 import (
 	"bytes"
+	"strings"
 	"testing"
 	"time"
 )
 
 func TestParseFormat_Valid(t *testing.T) {
-	cases := []string{"text", "json", "csv", "table", "markdown", "prometheus", "html", "xml", "influx"}
-	for _, c := range cases {
-		if _, err := ParseFormat(c); err != nil {
-			t.Errorf("expected %q to be valid, got error: %v", c, err)
-		}
+	cases := []struct {
+		input    string
+		expected Format
+	}{
+		{"text", FormatText},
+		{"json", FormatJSON},
+		{"csv", FormatCSV},
+		{"table", FormatTable},
+		{"markdown", FormatMarkdown},
+		{"prometheus", FormatPrometheus},
+		{"html", FormatHTML},
+		{"xml", FormatXML},
+		{"influx", FormatInflux},
+		{"hdr", FormatHDR},
+	}
+	for _, tc := range cases {
+		t.Run(tc.input, func(t *testing.T) {
+			f, err := ParseFormat(tc.input)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if f != tc.expected {
+				t.Errorf("expected %d, got %d", tc.expected, f)
+			}
+		})
 	}
 }
 
 func TestParseFormat_Invalid(t *testing.T) {
-	if _, err := ParseFormat("nope"); err == nil {
-		t.Fatal("expected error for unknown format")
+	_, err := ParseFormat("bogus")
+	if err == nil {
+		t.Error("expected error for unknown format")
 	}
 }
 
 func TestParseFormat_RoundTrip(t *testing.T) {
-	f, err := ParseFormat("json")
+	f, err := ParseFormat("hdr")
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("unexpected error: %v", err)
 	}
-	if f != FormatJSON {
-		t.Fatalf("expected FormatJSON")
+	if f != FormatHDR {
+		t.Errorf("expected FormatHDR")
 	}
 }
 
 func TestWrite_Formats(t *testing.T) {
-	r := New([]Result{
+	results := []Result{
 		{Duration: 10 * time.Millisecond},
 		{Duration: 20 * time.Millisecond},
-	})
-	formats := []Format{FormatText, FormatJSON, FormatCSV, FormatTable, FormatMarkdown, FormatPrometheus, FormatHTML, FormatXML, FormatInflux}
+	}
+	r := New(results)
+
+	formats := []Format{
+		FormatText, FormatCSV, FormatTable, FormatMarkdown,
+		FormatPrometheus, FormatHTML, FormatInflux,
+		FormatDotPlot, FormatSparkline, FormatHeatmap,
+		FormatTimeline, FormatFlamegraph, FormatHDR,
+	}
 	for _, f := range formats {
 		var buf bytes.Buffer
-		if err := Write(&buf, r, f); err != nil {
-			t.Errorf("Write failed for format %v: %v", f, err)
+		if err := Write(&buf, r, results, f); err != nil {
+			t.Errorf("Write format %d returned error: %v", f, err)
 		}
 		if buf.Len() == 0 {
-			t.Errorf("expected non-empty output for format %v", f)
+			t.Errorf("Write format %d produced no output", f)
 		}
 	}
 }
 
 func TestWrite_UnknownFormat(t *testing.T) {
-	r := New([]Result{{Duration: 5 * time.Millisecond}})
 	var buf bytes.Buffer
-	if err := Write(&buf, r, Format(999)); err != nil {
-		t.Fatalf("unexpected error for unknown format (falls back to text): %v", err)
+	err := Write(&buf, nil, nil, Format(9999))
+	if err == nil {
+		t.Error("expected error for unknown format")
+	}
+	if !strings.Contains(err.Error(), "unsupported") {
+		t.Errorf("expected 'unsupported' in error, got: %v", err)
 	}
 }
 
-func TestWrite_NilReport(t *testing.T) {
+func TestWrite_HDRFormat(t *testing.T) {
+	results := []Result{
+		{Duration: 5 * time.Millisecond},
+		{Duration: 15 * time.Millisecond},
+		{Duration: 50 * time.Millisecond},
+	}
+	r := New(results)
 	var buf bytes.Buffer
-	if err := Write(&buf, nil, FormatText); err == nil {
-		t.Fatal("expected error for nil report")
+	if err := Write(&buf, r, results, FormatHDR); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(buf.String(), "HDR Histogram") {
+		t.Errorf("expected HDR Histogram header in output")
 	}
 }

@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-// Format represents a supported output format.
+// Format represents an output format for reports.
 type Format int
 
 const (
@@ -19,6 +19,12 @@ const (
 	FormatHTML
 	FormatXML
 	FormatInflux
+	FormatDotPlot
+	FormatSparkline
+	FormatHeatmap
+	FormatTimeline
+	FormatFlamegraph
+	FormatHDR
 )
 
 var formatNames = map[string]Format{
@@ -31,40 +37,58 @@ var formatNames = map[string]Format{
 	"html":       FormatHTML,
 	"xml":        FormatXML,
 	"influx":     FormatInflux,
+	"dotplot":    FormatDotPlot,
+	"sparkline":  FormatSparkline,
+	"heatmap":    FormatHeatmap,
+	"timeline":   FormatTimeline,
+	"flamegraph": FormatFlamegraph,
+	"hdr":        FormatHDR,
 }
 
 // ParseFormat parses a format string into a Format value.
 func ParseFormat(s string) (Format, error) {
 	f, ok := formatNames[strings.ToLower(s)]
 	if !ok {
-		return FormatText, fmt.Errorf("unknown format %q", s)
+		return FormatText, fmt.Errorf("unknown format: %q", s)
 	}
 	return f, nil
 }
 
 // Write writes the report in the given format to w.
-func Write(w io.Writer, r *Report, f Format) error {
-	if r == nil {
-		return fmt.Errorf("nil report")
-	}
-	switch f {
+func Write(w io.Writer, r *Report, results []Result, format Format) error {
+	switch format {
+	case FormatText:
+		WriteText(w, r)
 	case FormatJSON:
 		return WriteJSON(w, r)
 	case FormatCSV:
-		return WriteCSV(w, r)
+		WriteCSV(w, results)
 	case FormatTable:
-		return WriteTable(w, r)
+		WriteTable(w, r)
 	case FormatMarkdown:
-		return WriteMarkdown(w, r)
+		WriteMarkdown(w, r)
 	case FormatPrometheus:
-		return WritePrometheus(w, r)
+		WritePrometheus(w, r)
 	case FormatHTML:
-		return WriteHTML(w, r)
+		WriteHTML(w, r)
 	case FormatXML:
 		return WriteXML(w, r)
 	case FormatInflux:
-		return WriteInflux(w, r)
+		WriteInflux(w, r)
+	case FormatDotPlot:
+		WriteDotPlot(w, results)
+	case FormatSparkline:
+		WriteSparkline(w, results)
+	case FormatHeatmap:
+		WriteHeatmap(w, results, 0)
+	case FormatTimeline:
+		WriteTimeline(w, results, 0)
+	case FormatFlamegraph:
+		WriteFlamegraph(w, results)
+	case FormatHDR:
+		WriteHDRHistogram(w, results, 10)
 	default:
-		return WriteText(w, r)
+		return fmt.Errorf("unsupported format: %d", format)
 	}
+	return nil
 }
