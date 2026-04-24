@@ -8,13 +8,13 @@ import (
 func TestResult_IsSuccess_NoError(t *testing.T) {
 	r := Result{}
 	if !r.IsSuccess() {
-		t.Fatal("expected IsSuccess true when no error")
+		t.Error("expected IsSuccess true when Err is nil")
 	}
 }
 
 func TestResult_IsSuccess_WithError(t *testing.T) {
-	r := Result{Error: errors.New("fail")}
+	r := Result{Err: errors.New("boom")}
 	if r.IsSuccess() {
-		t.Fatal("expected IsSuccess false when error set")
+		t.Error("expected IsSuccess false when Err is set")
 	}
 }
