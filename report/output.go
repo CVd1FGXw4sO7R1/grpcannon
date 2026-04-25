@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-// Format represents an output format for reports.
+// Format represents a supported output format for reports.
 type Format int
 
 const (
@@ -19,50 +19,47 @@ const (
 	FormatHTML
 	FormatXML
 	FormatInflux
-	FormatDotPlot
-	FormatSparkline
-	FormatHeatmap
-	FormatTimeline
-	FormatFlamegraph
-	FormatHDR
+	FormatPercentileStats
 )
 
-var formatNames = map[string]Format{
-	"text":       FormatText,
-	"json":       FormatJSON,
-	"csv":        FormatCSV,
-	"table":      FormatTable,
-	"markdown":   FormatMarkdown,
-	"prometheus": FormatPrometheus,
-	"html":       FormatHTML,
-	"xml":        FormatXML,
-	"influx":     FormatInflux,
-	"dotplot":    FormatDotPlot,
-	"sparkline":  FormatSparkline,
-	"heatmap":    FormatHeatmap,
-	"timeline":   FormatTimeline,
-	"flamegraph": FormatFlamegraph,
-	"hdr":        FormatHDR,
-}
-
-// ParseFormat parses a format string into a Format value.
+// ParseFormat converts a string format name to a Format constant.
+// Returns an error for unknown format names.
 func ParseFormat(s string) (Format, error) {
-	f, ok := formatNames[strings.ToLower(s)]
-	if !ok {
-		return FormatText, fmt.Errorf("unknown format: %q", s)
+	switch strings.ToLower(strings.TrimSpace(s)) {
+	case "text":
+		return FormatText, nil
+	case "json":
+		return FormatJSON, nil
+	case "csv":
+		return FormatCSV, nil
+	case "table":
+		return FormatTable, nil
+	case "markdown", "md":
+		return FormatMarkdown, nil
+	case "prometheus", "prom":
+		return FormatPrometheus, nil
+	case "html":
+		return FormatHTML, nil
+	case "xml":
+		return FormatXML, nil
+	case "influx":
+		return FormatInflux, nil
+	case "percentilesats", "pstats":
+		return FormatPercentileStats, nil
 	}
-	return f, nil
+	return 0, fmt.Errorf("unknown format: %q", s)
 }
 
-// Write writes the report in the given format to w.
-func Write(w io.Writer, r *Report, results []Result, format Format) error {
-	switch format {
+// Write renders the report r in the given format to w.
+// Returns an error for unsupported formats.
+func Write(w io.Writer, r *Report, results []Result, f Format) error {
+	switch f {
 	case FormatText:
 		WriteText(w, r)
 	case FormatJSON:
-		return WriteJSON(w, r)
+		WriteJSON(w, r)
 	case FormatCSV:
-		WriteCSV(w, results)
+		WriteCSV(w, r)
 	case FormatTable:
 		WriteTable(w, r)
 	case FormatMarkdown:
@@ -72,23 +69,13 @@ func Write(w io.Writer, r *Report, results []Result, format Format) error {
 	case FormatHTML:
 		WriteHTML(w, r)
 	case FormatXML:
-		return WriteXML(w, r)
+		WriteXML(w, r)
 	case FormatInflux:
 		WriteInflux(w, r)
-	case FormatDotPlot:
-		WriteDotPlot(w, results)
-	case FormatSparkline:
-		WriteSparkline(w, results)
-	case FormatHeatmap:
-		WriteHeatmap(w, results, 0)
-	case FormatTimeline:
-		WriteTimeline(w, results, 0)
-	case FormatFlamegraph:
-		WriteFlamegraph(w, results)
-	case FormatHDR:
-		WriteHDRHistogram(w, results, 10)
+	case FormatPercentileStats:
+		WritePercentileStats(w, results)
 	default:
-		return fmt.Errorf("unsupported format: %d", format)
+		return fmt.Errorf("unsupported format: %d", f)
 	}
 	return nil
 }
