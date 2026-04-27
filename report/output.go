@@ -6,76 +6,65 @@ import (
 	"strings"
 )
 
-// Format represents a supported output format for reports.
-type Format int
+// Format represents a supported output format.
+type Format string
 
 const (
-	FormatText Format = iota
-	FormatJSON
-	FormatCSV
-	FormatTable
-	FormatMarkdown
-	FormatPrometheus
-	FormatHTML
-	FormatXML
-	FormatInflux
-	FormatPercentileStats
+	FormatText       Format = "text"
+	FormatJSON       Format = "json"
+	FormatCSV        Format = "csv"
+	FormatTable      Format = "table"
+	FormatMarkdown   Format = "markdown"
+	FormatPrometheus Format = "prometheus"
+	FormatHTML       Format = "html"
+	FormatXML        Format = "xml"
+	FormatInflux     Format = "influx"
 )
 
-// ParseFormat converts a string format name to a Format constant.
-// Returns an error for unknown format names.
-func ParseFormat(s string) (Format, error) {
-	switch strings.ToLower(strings.TrimSpace(s)) {
-	case "text":
-		return FormatText, nil
-	case "json":
-		return FormatJSON, nil
-	case "csv":
-		return FormatCSV, nil
-	case "table":
-		return FormatTable, nil
-	case "markdown", "md":
-		return FormatMarkdown, nil
-	case "prometheus", "prom":
-		return FormatPrometheus, nil
-	case "html":
-		return FormatHTML, nil
-	case "xml":
-		return FormatXML, nil
-	case "influx":
-		return FormatInflux, nil
-	case "percentilesats", "pstats":
-		return FormatPercentileStats, nil
-	}
-	return 0, fmt.Errorf("unknown format: %q", s)
+var validFormats = []Format{
+	FormatText, FormatJSON, FormatCSV, FormatTable,
+	FormatMarkdown, FormatPrometheus, FormatHTML, FormatXML, FormatInflux,
 }
 
-// Write renders the report r in the given format to w.
-// Returns an error for unsupported formats.
-func Write(w io.Writer, r *Report, results []Result, f Format) error {
+// ParseFormat parses a string into a Format, returning an error if unknown.
+func ParseFormat(s string) (Format, error) {
+	f := Format(strings.ToLower(strings.TrimSpace(s)))
+	for _, v := range validFormats {
+		if f == v {
+			return f, nil
+		}
+	}
+	return "", fmt.Errorf("unknown format %q", s)
+}
+
+// Write writes the report in the given format to w.
+func Write(w io.Writer, r *Report, f Format) error {
 	switch f {
-	case FormatText:
-		WriteText(w, r)
 	case FormatJSON:
-		WriteJSON(w, r)
+		return WriteJSON(w, r)
 	case FormatCSV:
-		WriteCSV(w, r)
+		return WriteCSV(w, r)
 	case FormatTable:
 		WriteTable(w, r)
+		return nil
 	case FormatMarkdown:
 		WriteMarkdown(w, r)
+		return nil
 	case FormatPrometheus:
 		WritePrometheus(w, r)
+		return nil
 	case FormatHTML:
 		WriteHTML(w, r)
+		return nil
 	case FormatXML:
-		WriteXML(w, r)
+		return WriteXML(w, r)
 	case FormatInflux:
 		WriteInflux(w, r)
-	case FormatPercentileStats:
-		WritePercentileStats(w, results)
+		return nil
+	case FormatText:
+		WriteText(w, r)
+		return nil
 	default:
-		return fmt.Errorf("unsupported format: %d", f)
+		return fmt.Errorf("unsupported format: %s", f)
 	}
-	return nil
 }
