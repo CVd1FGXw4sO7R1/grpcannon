@@ -21,50 +21,44 @@ const (
 	FormatInflux     Format = "influx"
 )
 
-var validFormats = []Format{
-	FormatText, FormatJSON, FormatCSV, FormatTable,
-	FormatMarkdown, FormatPrometheus, FormatHTML, FormatXML, FormatInflux,
-}
-
-// ParseFormat parses a string into a Format, returning an error if unknown.
+// ParseFormat converts a string to a Format, returning an error for unknown values.
 func ParseFormat(s string) (Format, error) {
-	f := Format(strings.ToLower(strings.TrimSpace(s)))
-	for _, v := range validFormats {
-		if f == v {
-			return f, nil
-		}
+	switch Format(strings.ToLower(s)) {
+	case FormatText, FormatJSON, FormatCSV, FormatTable,
+		FormatMarkdown, FormatPrometheus, FormatHTML, FormatXML, FormatInflux:
+		return Format(strings.ToLower(s)), nil
 	}
-	return "", fmt.Errorf("unknown format %q", s)
+	return "", fmt.Errorf("unknown format: %q", s)
 }
 
-// Write writes the report in the given format to w.
-func Write(w io.Writer, r *Report, f Format) error {
+// Write dispatches the report to w in the requested format.
+func Write(w io.Writer, rep *Report, f Format) error {
 	switch f {
+	case FormatText:
+		return WriteText(w, rep)
 	case FormatJSON:
-		return WriteJSON(w, r)
+		return WriteJSON(w, rep)
 	case FormatCSV:
-		return WriteCSV(w, r)
+		return WriteCSV(w, rep)
 	case FormatTable:
-		WriteTable(w, r)
+		WriteTable(w, rep)
 		return nil
 	case FormatMarkdown:
-		WriteMarkdown(w, r)
+		WriteMarkdown(w, rep)
 		return nil
 	case FormatPrometheus:
-		WritePrometheus(w, r)
+		WritePrometheus(w, rep)
 		return nil
 	case FormatHTML:
-		WriteHTML(w, r)
+		WriteHTML(w, rep)
 		return nil
 	case FormatXML:
-		return WriteXML(w, r)
-	case FormatInflux:
-		WriteInflux(w, r)
+		WriteXML(w, rep)
 		return nil
-	case FormatText:
-		WriteText(w, r)
+	case FormatInflux:
+		WriteInflux(w, rep)
 		return nil
 	default:
-		return fmt.Errorf("unsupported format: %s", f)
+		return fmt.Errorf("unsupported format: %q", f)
 	}
 }
